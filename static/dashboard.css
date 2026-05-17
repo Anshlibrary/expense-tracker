@@ -1,0 +1,58 @@
+body {
+    background-color: #f5f5f5;
+    font-family: Arial, sans-serif;
+}
+
+/* Navbar */
+
+.navbar {
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.2);
+}
+
+/* Cards */
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Table */
+
+.table {
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Buttons */
+
+.btn {
+    border-radius: 8px;
+}
+
+/* Form Inputs */
+
+.form-control {
+    border-radius: 8px;
+}
+
+/* Headings */
+
+h1, h2, h3, h4 {
+    font-weight: bold;
+}
+
+/* Dashboard Cards */
+
+.bg-primary,
+.bg-success,
+.bg-danger {
+    border-radius: 15px;
+}
+
+/* Image */
+
+img {
+    border-radius: 10px;
+}

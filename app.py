@@ -162,6 +162,21 @@ def reports():
 
     return render_template('reports.html')
 
+# ================= SEARCH =================
+
+@app.route('/search', methods=['GET'])
+def search():
+
+    keyword = request.args.get('keyword')
+
+    query = """
+    SELECT * FROM Expenses
+    WHERE category LIKE ?
+    OR description LIKE ?
+    """
+
+    search_value = 'f'
+
 # ================= EXPORT CSV =================
 
 @app.route('/export')
