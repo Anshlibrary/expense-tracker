@@ -2,41 +2,61 @@
 
 {% block content %}
 
-<h2>Update Expense</h2>
+<h1 class="mb-4">Update Expense</h1>
 
 <form method="POST">
 
-    <input
+    <div class="mb-3">
+
+        <input
         type="text"
         name="date"
-        value="{{ expense.date }}"
-        class="form-control mb-2"
-    >
+        value="{{ expense.expense_date }}"
+        class="form-control"
+        required
+        >
 
-    <input
+    </div>
+
+     <div class="mb-3">
+
+        <input
         type="text"
         name="category"
         value="{{ expense.category }}"
-        class="form-control mb-2"
-    >
+        class="form-control"
+        required
+        >
 
-    <input
+    </div>
+
+    <div class="mb-3">
+
+        <input
         type="text"
         name="description"
         value="{{ expense.description }}"
-        class="form-control mb-2"
-    >
+        class="form-control"
+        required
+        >
 
-    <input
+    </div>
+
+     <div class="mb-3">
+
+        <input
         type="number"
         step="0.01"
         name="amount"
         value="{{ expense.amount }}"
-        class="form-control mb-2"
-    >
+        class="form-control"
+        required
+        >
+
+    </div>
 
     <button class="btn btn-primary">
-        Update
+        Update Expense
     </button>
 
 </form>
