@@ -6,9 +6,32 @@
             Expense Tracker
         </a>
 
+        <!-- SEARCH FORM -->
+
+        <form
+        class="d-flex me-3"
+        action="/search"
+        method="GET"
+        >
+
+            <input
+            type="text"
+            name="keyword"
+            placeholder="Search"
+            class="form-control me-2"
+            >
+
+            <button class="btn btn-light">
+                Search
+            </button>
+
+        </form>
+
+        <!-- FILTER FORM -->
+
         <form
         class="d-flex flex-wrap gap-2"
-        action="{{ request.path }}"
+        action="/filter"
         method="GET"
         >
 
@@ -41,23 +64,25 @@
             class="form-control"
             >
 
-            <button class="btn btn-light">
+            <button class="btn btn-warning">
                 Filter
             </button>
 
         </form>
 
-        <div>
+        <!-- NAV BUTTONS -->
+
+        <div class="ms-3">
 
             <a href="/" class="btn btn-success me-2">
                 Home
             </a>
 
-            <a href="/reports" class="btn btn-warning me-2">
+            <a href="/reports" class="btn btn-info me-2">
                 Reports
             </a>
 
-            <a href="/export" class="btn btn-info">
+            <a href="/export" class="btn btn-danger">
                 Export CSV
             </a>
 

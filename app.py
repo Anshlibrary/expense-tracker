@@ -2,31 +2,39 @@ from flask import Flask, render_template, request, redirect, send_file
 import pyodbc
 import pandas as pd
 import matplotlib.pyplot as plt
+from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
 
 # DATABASE CONNECTION
-conn = pyodbc.connect(
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expenses.db'
 
-    'DRIVER={SQL Server};'
-    'SERVER=DL-AVL-35;'
-    'DATABASE=ExpenseTrackerDB;'
-    'UID=sa;'
-    'PWD=Avaal2009'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-)
+db = SQLAlchemy(app)
 
-cursor = conn.cursor()
+class Expense(db.Model):
 
+    id = db.Column(db.Integer, primary_key=True)
+
+    category = db.Column(db.String(100))
+
+    description = db.Column(db.String(255))
+
+    amount = db.Column(db.Float)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp()
+    )
 
 # ================= HOME PAGE =================
 
 @app.route('/')
 def home():
 
-    cursor.execute("SELECT * FROM Expenses")
-
-    expenses = cursor.fetchall()
+    expenses = Expense.query.all()
 
     total = 0
 
@@ -44,26 +52,25 @@ def home():
 @app.route('/add', methods=['POST'])
 def add_expense():
 
-    date = request.form['date']
     category = request.form['category']
+
     description = request.form['description']
+
     amount = request.form['amount']
 
-    query = """
+    new_expense = Expense(
 
-    INSERT INTO Expenses
-    (expense_date, category, description, amount)
+        category=category,
 
-    VALUES (?, ?, ?, ?)
+        description=description,
 
-    """
+        amount=amount
 
-    cursor.execute(
-        query,
-        (date, category, description, amount)
     )
 
-    conn.commit()
+    db.session.add(new_expense)
+
+    db.session.commit()
 
     return redirect('/')
 
@@ -72,12 +79,11 @@ def add_expense():
 @app.route('/delete/<int:id>')
 def delete_expense(id):
 
-    cursor.execute(
-        "DELETE FROM Expenses WHERE id=?",
-        (id,)
-    )
+    expense = Expense.query.get(id)
 
-    conn.commit()
+    db.session.delete(expense)
+
+    db.session.commit()
 
     return redirect('/')
 
@@ -86,41 +92,19 @@ def delete_expense(id):
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
 def update_expense(id):
 
+    expense = Expense.query.get(id)
+
     if request.method == 'POST':
 
-        date = request.form['date']
-        category = request.form['category']
-        description = request.form['description']
-        amount = request.form['amount']
+        expense.category = request.form['category']
 
-        query = """
+        expense.description = request.form['description']
 
-        UPDATE Expenses
+        expense.amount = request.form['amount']
 
-        SET
-        expense_date=?,
-        category=?,
-        description=?,
-        amount=?
+        db.session.commit()
 
-        WHERE id=?
-
-        """
-
-        cursor.execute(
-            query,
-            (date, category, description, amount, id)
-        )
-
-        conn.commit()
         return redirect('/')
-
-    cursor.execute(
-        "SELECT * FROM Expenses WHERE id=?",
-        (id,)
-    )
-
-    expense = cursor.fetchone()
 
     return render_template(
         'update_expense.html',
@@ -132,34 +116,7 @@ def update_expense(id):
 @app.route('/reports')
 def reports():
 
-    date = request.args.get('date')
-    month = request.args.get('month')
-    year = request.args.get('year')
-    category = request.args.get('category')
-
-    query = "SELECT category, amount FROM Expenses WHERE 1=1"
-
-    params = []
-
-    if date:
-        query += " AND expense_date = ?"
-        params.append(date)
-
-    if month:
-        query += " AND MONTH(expense_date) = ?"
-        params.append(int(month))
-
-    if year:
-        query += " AND YEAR(expense_date) = ?"
-        params.append(int(year))
-
-    if category:
-        query += " AND category LIKE ?"
-        params.append(f'%{category}%')
-
-    cursor.execute(query, params)
-
-    expenses = cursor.fetchall()
+    expenses = Expense.query.all()
 
     categories = {}
 
@@ -182,78 +139,22 @@ def reports():
 
     plt.savefig('static/chart.png')
 
-    return render_template(
-        'reports.html',
-        filters={
-            'date': date,
-            'month': month,
-            'year': year,
-            'category': category
-        }
-    )
+    return render_template('reports.html')
 
 # ================= SEARCH =================
 
-@app.route('/search', methods=['GET'])
+@app.route('/search')
 def search():
 
     keyword = request.args.get('keyword')
 
-    query = """
-    SELECT * FROM Expenses
-    WHERE category LIKE ?
-    OR description LIKE ?
-    """
+    expenses = Expense.query.filter(
 
-    search_value = 'f'
-# ================= EXPORT CSV =================
+        (Expense.category.like(f'%{keyword}%')) |
 
-@app.route('/export')
-def export_csv():
+        (Expense.description.like(f'%{keyword}%'))
 
-    query = "SELECT * FROM Expenses"
-
-    df = pd.read_sql(query, conn)
-
-    path = "exports/expenses.csv"
-
-    df.to_csv(path, index=False)
-
-    return send_file(path, as_attachment=True)
-
-# ================= FILTER =================
-
-@app.route('/filter')
-def filter_expenses():
-
-    date = request.args.get('date')
-    month = request.args.get('month')
-    year = request.args.get('year')
-    category = request.args.get('category')
-
-    query = "SELECT * FROM Expenses WHERE 1=1"
-
-    params = []
-
-    if date:
-        query += " AND expense_date = ?"
-        params.append(date)
-
-    if month:
-        query += " AND MONTH(expense_date) = ?"
-        params.append(int(month))
-
-    if year:
-        query += " AND YEAR(expense_date) = ?"
-        params.append(int(year))
-
-    if category:
-        query += " AND category LIKE ?"
-        params.append(f'%{category}%')
-
-    cursor.execute(query, params)
-
-    expenses = cursor.fetchall()
+    ).all()
 
     total = 0
 
@@ -265,9 +166,92 @@ def filter_expenses():
         expenses=expenses,
         total=total
     )
+# ================= EXPORT CSV =================
 
+@app.route('/export')
+def export_csv():
+
+    expenses = Expense.query.all()
+
+    data = []
+
+    for expense in expenses:
+
+        data.append({
+
+            'ID': expense.id,
+
+            'Category': expense.category,
+
+            'Description': expense.description,
+
+            'Amount': expense.amount,
+
+            'Created At': expense.created_at
+
+        })
+
+    df = pd.DataFrame(data)
+
+    path = 'exports/expenses.csv'
+
+    df.to_csv(path, index=False)
+
+    return send_file(path, as_attachment=True)
+
+# ================= FILTER =================
+
+@app.route('/filter')
+def filter_expenses():
+
+    date = request.args.get('date')
+
+    month = request.args.get('month')
+
+    year = request.args.get('year')
+
+    category = request.args.get('category')
+
+    query = Expense.query
+
+    if date:
+
+        query = query.filter(
+            db.func.date(Expense.created_at) == date
+        )
+
+    if month:
+
+        query = query.filter(
+            db.extract('month', Expense.created_at) == int(month)
+        )
+
+    if year:
+
+        query = query.filter(
+            db.extract('year', Expense.created_at) == int(year)
+        )
+
+    if category:
+
+        query = query.filter(
+            Expense.category.like(f'%{category}%')
+        )
+
+    expenses = query.all()
+
+    total = 0
+
+    for expense in expenses:
+        total += expense.amount
+
+    return render_template(
+        'dashboard.html',
+        expenses=expenses,
+        total=total
+    )
 # ================= RUN APP =================
 
 if __name__ == '__main__':
 
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
