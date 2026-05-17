@@ -16,6 +16,64 @@ conn = pyodbc.connect(
 
 cursor = conn.cursor()
 
+# ================= REPORTS =================
+
+@app.route('/reports')
+
+def reports():
+
+    expenses = Expense.query.all()
+
+    categories = {}
+
+    for expense in expenses:
+
+        if expense.category in categories:
+            categories[expense.category] += expense.amount
+        else:
+            categories[expense.category] = expense.amount
+
+    labels = list(categories.keys())
+
+    amounts = list(categories.values())
+
+    plt.figure(figsize=(5,5))
+
+    plt.pie(amounts, labels=labels, autopct='%1.1f%%')
+
+    plt.savefig('static/chart.png')
+
+    return render_template('reports.html')
+
+
+# ================= EXPORTS =================
+
+@app.route('/export')
+
+def export_csv():
+
+    expenses = Expense.query.all()
+
+    data = []
+
+    for expense in expenses:
+
+        data.append({
+            'Date': expense.date,
+            'Category': expense.category,
+            'Description': expense.description,
+            'Amount': expense.amount
+        })
+
+    df = pd.DataFrame(data)
+
+    path = 'exports/expenses.csv'
+
+    df.to_csv(path, index=False)
+
+    return send_file(path, as_attachment=True)
+
+
 # ================= HOME =================
 
 @app.route('/')
