@@ -129,11 +129,35 @@ def update_expense(id):
 
 
 # ================= REPORTS =================
-
 @app.route('/reports')
 def reports():
 
-    cursor.execute("SELECT category, amount FROM Expenses")
+    date = request.args.get('date')
+    month = request.args.get('month')
+    year = request.args.get('year')
+    category = request.args.get('category')
+
+    query = "SELECT category, amount FROM Expenses WHERE 1=1"
+
+    params = []
+
+    if date:
+        query += " AND expense_date = ?"
+        params.append(date)
+
+    if month:
+        query += " AND MONTH(expense_date) = ?"
+        params.append(int(month))
+
+    if year:
+        query += " AND YEAR(expense_date) = ?"
+        params.append(int(year))
+
+    if category:
+        query += " AND category LIKE ?"
+        params.append(f'%{category}%')
+
+    cursor.execute(query, params)
 
     expenses = cursor.fetchall()
 
@@ -141,26 +165,32 @@ def reports():
 
     for expense in expenses:
 
-        category = expense.category
-        amount = expense.amount
-
-        if category in categories:
-            categories[category] += amount
+        if expense.category in categories:
+            categories[expense.category] += expense.amount
         else:
-            categories[category] = amount
+            categories[expense.category] = expense.amount
 
     labels = list(categories.keys())
     amounts = list(categories.values())
 
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(6,6))
 
-    plt.pie(amounts, labels=labels, autopct='%1.1f%%')
+    if amounts:
+        plt.pie(amounts, labels=labels, autopct='%1.1f%%')
 
-    plt.title("Expense Categories")
+    plt.title("Expense Report")
 
     plt.savefig('static/chart.png')
 
-    return render_template('reports.html')
+    return render_template(
+        'reports.html',
+        filters={
+            'date': date,
+            'month': month,
+            'year': year,
+            'category': category
+        }
+    )
 
 # ================= SEARCH =================
 
@@ -176,7 +206,6 @@ def search():
     """
 
     search_value = 'f'
-
 # ================= EXPORT CSV =================
 
 @app.route('/export')
@@ -191,6 +220,51 @@ def export_csv():
     df.to_csv(path, index=False)
 
     return send_file(path, as_attachment=True)
+
+# ================= FILTER =================
+
+@app.route('/filter')
+def filter_expenses():
+
+    date = request.args.get('date')
+    month = request.args.get('month')
+    year = request.args.get('year')
+    category = request.args.get('category')
+
+    query = "SELECT * FROM Expenses WHERE 1=1"
+
+    params = []
+
+    if date:
+        query += " AND expense_date = ?"
+        params.append(date)
+
+    if month:
+        query += " AND MONTH(expense_date) = ?"
+        params.append(int(month))
+
+    if year:
+        query += " AND YEAR(expense_date) = ?"
+        params.append(int(year))
+
+    if category:
+        query += " AND category LIKE ?"
+        params.append(f'%{category}%')
+
+    cursor.execute(query, params)
+
+    expenses = cursor.fetchall()
+
+    total = 0
+
+    for expense in expenses:
+        total += expense.amount
+
+    return render_template(
+        'dashboard.html',
+        expenses=expenses,
+        total=total
+    )
 
 # ================= RUN APP =================
 

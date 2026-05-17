@@ -4,6 +4,48 @@
 
 <h1 class="mb-4">Expense Tracker</h1>
 
+<div class="row mb-4">
+
+    <div class="col-md-4">
+
+        <div class="card bg-primary text-white p-3">
+
+            <h4>Total Expenses</h4>
+
+            <h2>₹ {{ total }}</h2>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="card bg-success text-white p-3">
+
+            <h4>Total Transactions</h4>
+
+            <h2>{{ expenses|length }}</h2>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="card bg-danger text-white p-3">
+
+            <h4>Highest Expense</h4>
+
+            <h2>
+                ₹ {{ expenses|map(attribute='amount')|max }}
+            </h2>
+
+        </div>
+
+    </div>
+
+</div>
+
 <div class="card p-3 mb-4">
 
     <h3>Total Expense: ₹ {{ total }}</h3>
@@ -15,7 +57,7 @@
     <div class="mb-3">
 
         <input
-        type="text"
+        type="date"
         name="date"
         placeholder="Date"
         class="form-control"
