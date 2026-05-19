@@ -7,15 +7,15 @@ import os
 
 app = Flask(__name__)
 
-# DATABASE CONNECTION
+# DATABASE CONFIG
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expenses.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-with app.app_context():
-    db.create_all()
+
 
 class Expense(db.Model):
 
@@ -32,6 +32,12 @@ class Expense(db.Model):
         default=db.func.current_timestamp()
     )
 
+
+# CREATE TABLES
+
+with app.app_context():
+    db.create_all()
+    
 # ================= HOME PAGE =================
 
 @app.route('/')
